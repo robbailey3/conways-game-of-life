@@ -6,8 +6,19 @@ html,
 body {
   padding: 0;
   margin: 0;
+  font-size: 18px;
 }
 
 canvas {
   display: block;
+}
+
+button {
+  margin: 0.25rem;
+  padding: 0.6rem 1.2rem;
+  font-weight: bold;
+  border: none;
+  background: #9a031e;
+  border-radius: 4px;
+  color: #fff;
 }

@@ -1,4 +1,3 @@
-import { Settings } from 'http2';
 import { fromEvent } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { Canvas } from '../canvas/canvas';
@@ -6,8 +5,10 @@ import { Cell } from '../cell/cell';
 
 export class Game {
   public config = {
-    cellSize: 25,
+    cellSize: 15,
   };
+
+  public isPlaying: boolean = false;
 
   public timeout: number;
 
@@ -25,11 +26,14 @@ export class Game {
   }
 
   public pause() {
-    window.clearTimeout(this.timeout);
+    this.isPlaying = false;
+    window.cancelAnimationFrame(this.timeout);
   }
 
   public play() {
-    this.animate();
+    if (!this.isPlaying) {
+      this.animate();
+    }
   }
 
   private createCells() {
@@ -54,14 +58,21 @@ export class Game {
         aliveNeighbours -= Number(this.cells[l][m].isAlive);
 
         if (this.cells[l][m].isAlive && aliveNeighbours < 2) {
-          this.cells[l][m].isAlive = false;
+          this.cells[l][m].nextGenIsAlive = false;
         } else if (this.cells[l][m].isAlive && aliveNeighbours > 3) {
-          this.cells[l][m].isAlive = false;
+          this.cells[l][m].nextGenIsAlive = false;
         } else if (!this.cells[l][m].isAlive && aliveNeighbours === 3) {
-          this.cells[l][m].isAlive = true;
+          this.cells[l][m].nextGenIsAlive = true;
+        } else {
+          this.cells[l][m].nextGenIsAlive = this.cells[l][m].isAlive;
         }
       }
     }
+    this.cells.forEach((row) =>
+      row.forEach((cell) => {
+        cell.isAlive = cell.nextGenIsAlive;
+      })
+    );
   }
 
   private drawCells() {
@@ -79,18 +90,19 @@ export class Game {
   }
 
   private animate() {
+    this.isPlaying = true;
     this.canvas.clear();
     this.calculateNext();
     this.drawCells();
     this.canvas.drawGrid();
-    this.timeout = window.setTimeout(() => {
+    this.timeout = window.requestAnimationFrame(() => {
       this.animate();
-    }, 1000);
+    });
   }
 
   private addClickListener() {
     fromEvent(document, 'click')
-      .pipe(debounceTime(200))
+      .pipe(debounceTime(10))
       .subscribe({
         next: ($evt: MouseEvent) => {
           this.cells.forEach((row) =>
