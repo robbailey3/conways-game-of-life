@@ -5,7 +5,7 @@ import { Cell } from '../cell/cell';
 
 export class Game {
   public config = {
-    cellSize: 15,
+    cellSize: 20,
   };
 
   public isPlaying: boolean = false;
@@ -49,18 +49,21 @@ export class Game {
     for (let i = 0; i < window.innerWidth; i += this.config.cellSize) {
       const row = [];
       for (let j = 0; j < window.innerHeight; j += this.config.cellSize) {
-        row.push(new Cell({ x: i, y: j }, Math.random() * 10 > 9));
+        row.push(new Cell({ x: i, y: j }, Math.random() * 10 > 5));
       }
       this.cells.push(row);
     }
   }
 
   private calculateNext() {
-    for (let l = 1; l < this.cells.length - 1; l += 1) {
-      for (let m = 1; m < this.cells[0].length - 1; m += 1) {
+    for (let l = 0; l < this.cells.length - 1; l += 1) {
+      for (let m = 0; m < this.cells[0].length - 1; m += 1) {
         let aliveNeighbours = 0;
         for (let i = -1; i <= 1; i += 1) {
           for (let j = -1; j <= 1; j += 1) {
+            if ((l === 0 && i === -1) || (m === 0 && j === -1)) {
+              continue;
+            }
             aliveNeighbours += Number(this.cells[l + i][m + j].isAlive);
           }
         }
