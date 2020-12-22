@@ -36,11 +36,20 @@ export class Game {
     }
   }
 
+  public clear() {
+    if (this.isPlaying) {
+      this.pause();
+    }
+    this.cells.forEach((row) => row.forEach((cell) => (cell.isAlive = false)));
+    this.drawCells();
+    this.canvas.drawGrid();
+  }
+
   private createCells() {
     for (let i = 0; i < window.innerWidth; i += this.config.cellSize) {
       const row = [];
       for (let j = 0; j < window.innerHeight; j += this.config.cellSize) {
-        row.push(new Cell({ x: i, y: j }, false));
+        row.push(new Cell({ x: i, y: j }, Math.random() * 10 > 9));
       }
       this.cells.push(row);
     }
@@ -83,7 +92,7 @@ export class Game {
           cell.position.y,
           this.config.cellSize,
           this.config.cellSize,
-          cell.isAlive ? '#fff' : '#333'
+          cell.isAlive ? '#00FF00' : '#333'
         )
       )
     );
