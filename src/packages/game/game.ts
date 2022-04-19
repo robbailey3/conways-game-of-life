@@ -1,7 +1,7 @@
-import { fromEvent } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
-import { Canvas } from '../canvas/canvas';
-import { Cell } from '../cell/cell';
+import { fromEvent } from "rxjs";
+import { debounceTime, map, switchMap, take } from "rxjs/operators";
+import { Canvas } from "../canvas/canvas";
+import { Cell } from "../cell/cell";
 
 export class Game {
   public config = {
@@ -15,6 +15,7 @@ export class Game {
   private cells: Cell[][] = [];
 
   private canvas: Canvas;
+
   constructor(hostEl: HTMLCanvasElement) {
     this.canvas = new Canvas(hostEl, this.config.cellSize);
     this.addClickListener();
@@ -95,7 +96,7 @@ export class Game {
           cell.position.y,
           this.config.cellSize,
           this.config.cellSize,
-          cell.isAlive ? '#00FF00' : '#333'
+          cell.isAlive ? "#00FF00" : "#333"
         )
       )
     );
@@ -113,7 +114,7 @@ export class Game {
   }
 
   private addClickListener() {
-    fromEvent(document, 'click')
+    fromEvent(document, "click")
       .pipe(debounceTime(10))
       .subscribe({
         next: ($evt: MouseEvent) => {
@@ -131,12 +132,74 @@ export class Game {
                   cell.position.y,
                   this.config.cellSize,
                   this.config.cellSize,
-                  cell.isAlive ? '#fff' : '#333'
+                  cell.isAlive ? "#fff" : "#333"
                 );
               }
             })
           );
         },
+      });
+    const $clickStart = fromEvent<MouseEvent>(document, "mousedown");
+
+    const $clickEnd = fromEvent<MouseEvent>(document, "mouseup");
+
+    $clickStart
+      .pipe(
+        map((evt) => ({ startX: evt.clientX, startY: evt.clientY })),
+        switchMap((start) =>
+          $clickEnd.pipe(
+            take(1),
+            map((evt) => ({
+              endX: evt.clientX,
+              endY: evt.clientY,
+              startX: start.startX,
+              startY: start.startY,
+            }))
+          )
+        )
+      )
+      .subscribe((delta) => {
+        const lineLength = Math.sqrt(
+          Math.pow(delta.endX - delta.startX, 2) +
+            Math.pow(delta.endY - delta.startY, 2)
+        );
+
+        const lineAngle = Math.atan2(
+          delta.endY - delta.startY,
+          delta.endX - delta.startX
+        );
+
+        const linePoints = [
+          ...Array.from({
+            length: Math.ceil(lineLength / this.config.cellSize),
+          }).map((_, index) => {
+            const x = delta.startX + Math.cos(lineAngle) * (this.config.cellSize * (index + 1));
+            const y = delta.startY + Math.sin(lineAngle) * (this.config.cellSize * (index));
+            return { x, y };
+          }),
+        ];
+
+        this.cells.forEach((row) =>
+          row.forEach((cell) => {
+            linePoints.forEach((lp) => {
+              if (
+                cell.position.x > lp.x &&
+                cell.position.x < lp.x + this.config.cellSize &&
+                cell.position.y > lp.y &&
+                cell.position.y < lp.y + this.config.cellSize
+              ) {
+                cell.isAlive = true;
+                this.canvas.fillRect(
+                  cell.position.x,
+                  cell.position.y,
+                  this.config.cellSize,
+                  this.config.cellSize,
+                  cell.isAlive ? "#fff" : "#333"
+                );
+              }
+            })
+          })
+        );
       });
   }
 }
